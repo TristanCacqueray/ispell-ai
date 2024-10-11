@@ -13,9 +13,9 @@ source-repository head
     type: git
     location: https://github.com/MercuryTechnologies/ada.git
 
-executable ada
+executable ispell-ai
   main-is: Main.hs
-  other-modules: Slack, OpenAI, GetDX
+  other-modules: Slack, OpenAI, GetDX, ISpell
   build-depends:
       base >=4.7 && <5
     , aeson
@@ -33,6 +33,7 @@ executable ada
     , logging
     , mtl
     , optparse-applicative
+    , parsec
     , pretty-show
     , repline
     , safe-exceptions

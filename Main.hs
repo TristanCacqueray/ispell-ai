@@ -38,6 +38,8 @@ import Options.Applicative (Parser, ParserInfo, ParserPrefs(..))
 import Prelude hiding (error)
 import Servant.API ((:<|>)(..))
 import Servant.Client (ClientEnv, ClientError(..), ClientM, ResponseF(..))
+import System.Environment (getArgs)
+import System.Environment.Blank (getEnvDefault)
 import Tiktoken (Encoding)
 
 import OpenAI
@@ -100,6 +102,62 @@ import qualified System.Console.Repline as Repline
 import qualified System.Directory as Directory
 import qualified Text.Show.Pretty as Pretty
 import qualified Tiktoken
+
+import qualified ISpell
+
+-- | ispell-ai entry point.
+-- This function setups the API client and perform the completion requests
+-- produced by the ISpell module.
+main :: IO ()
+main = do
+    inputDocument <- Text.IO.getContents
+    apiUrl <- getEnvDefault "ISPELL_AI_URL" "http://127.0.0.1:11434"
+    apiKey <- Text.pack <$> getEnvDefault "ISPELL_AI_KEY" "no-key"
+    apiModel <- Text.pack <$> getEnvDefault "ISPELL_AI_MODEL" "llama3.2"
+
+    let managerSettings =
+            TLS.tlsManagerSettings
+                { HTTP.managerResponseTimeout = HTTP.responseTimeoutMicro 148_000_000
+                }
+
+    manager <- TLS.newTlsManagerWith managerSettings
+
+    openAIEnv <- do
+        baseUrl <- Client.parseBaseUrl apiUrl
+
+        return (Client.mkClientEnv manager baseUrl)
+
+    let (_embeddings :<|> completions) = Client.client @OpenAI.API Proxy header
+          where
+            header = "Bearer " <> apiKey
+
+    let run output = case output of
+            ISpell.Verbatim txt -> Text.IO.putStrLn txt
+            ISpell.Section prompt -> do
+                let req = OpenAI.CompletionRequest{..}
+                      where
+                        message = OpenAI.Message{..}
+                          where
+                            role = "user"
+
+                        messages = [message]
+
+                        max_tokens = Just 1024
+
+                        content = prompt
+
+                        model = apiModel
+                CompletionResponse{..} <- runClient openAIEnv (completions req)
+
+                case choices of
+                    [Choice{message = OpenAI.Message{..}}] ->
+                        Text.IO.putStrLn content
+                    _ ->
+                        Exception.throwIO MultipleChoices
+
+    debug <- (== ["--debug"]) <$> getArgs
+    _ <- traverse (if debug then print else run) $ ISpell.processDocument "French" inputDocument
+    pure ()
 
 instance Semigroup a => Semigroup (ClientM a) where
     (<>) = liftA2 (<>)
@@ -484,8 +542,9 @@ healthCheck application request respond
     | otherwise = do
         application request respond
 
-main :: IO ()
-main = Logging.withStderrLogging do
+-- the original ada main function
+_main :: IO ()
+_main = Logging.withStderrLogging do
     Options{..} <- Options.customExecParser parserPrefs parseOptionsInfo
 
     let encoding =
