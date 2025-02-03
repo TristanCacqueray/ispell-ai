@@ -113,7 +113,7 @@ main = do
     inputDocument <- Text.IO.getContents
     apiUrl <- getEnvDefault "ISPELL_AI_URL" "http://127.0.0.1:11434"
     apiKey <- Text.pack <$> getEnvDefault "ISPELL_AI_KEY" "no-key"
-    apiModel <- Text.pack <$> getEnvDefault "ISPELL_AI_MODEL" "llama3.2"
+    apiModel <- Text.pack <$> getEnvDefault "ISPELL_AI_MODEL" "nezahatkorkmaz/deepseek-v3"
 
     let managerSettings =
             TLS.tlsManagerSettings
