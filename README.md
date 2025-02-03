@@ -15,6 +15,9 @@ it writes the corrected version to stdout:
 cat my-post.md | ispell-ai
 ```
 
+Or use the [ispell-ai.el](./ispell-ai.el) package to run <kbd>M-x ispell-ai-region</kbd>
+using Emacs.
+
 Here are the environment variables:
 
 | Name            | Value       |
@@ -22,9 +25,6 @@ Here are the environment variables:
 | ISPELL_AI_URL   | Service URL |
 | ISPELL_AI_KEY   | API Key     |
 | ISPELL_AI_MODEL | Model Name  |
-
-The goal is to integrate this tool with a `M-x ispell-ai-region` command,
-to interactively accept the changes.
 
 
 ## Install
